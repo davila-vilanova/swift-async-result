@@ -28,9 +28,7 @@ private func makeAsync<I: Sendable, O: Sendable>(syncFunc: @escaping @Sendable (
         [Result<Int?, ErrorType1>.success(12), .success(nil)]
     )
 )
-func testMap(input: Result<String, ErrorType1>, expectedOutput: Result<Int?, ErrorType1>?)
-    async throws
-{
+func testMap(input: Result<String, ErrorType1>, expectedOutput: Result<Int?, ErrorType1>?) async {
     let transform: @Sendable (String) -> Int? = Int.init
     let async_mapped = await input.map { input in
         await Task { transform(input) }.value
