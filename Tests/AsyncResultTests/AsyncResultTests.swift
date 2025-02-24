@@ -2,36 +2,45 @@ import Testing
 
 @testable import AsyncResult
 
-private struct ErrorType1: Error, Equatable {
+struct ErrorType1: Error, Equatable {
     let message: String
 }
 
-private struct ErrorType2: Error, Equatable {
+struct ErrorType2: Error, Equatable {
     let message: String
 }
 
 // MARK: map
 
-@Test func testAsyncMapTransformsSuccess() async throws {
-    let original = Result<String, ErrorType1>.success("12")
-    let mapped = await original.map { input in
-        await Task { Int(input) }.value
+/// "Craftily converts" a regular, synchronous function with one argument of type `I`
+/// into an analogous but async counterpart.
+private func makeAsync<I: Sendable, O: Sendable>(syncFunc: @escaping @Sendable (I) -> O) -> (I)
+    async -> O
+{
+    return { input in
+        await Task.detached { syncFunc(input) }.value
     }
-    #expect(try mapped.get() == 12, "Expected success to be transformed")
 }
 
-@Test func testAsyncMapLeavesFailureUnchanged() async throws {
-    let original = Result<String, ErrorType1>.failure(ErrorType1(message: "error"))
-    let mapped = await original.map { _ in
-        await Task { "this should never run" }.value
+@Test(
+    arguments: zip(
+        [Result<String, ErrorType1>.success("12"), .success("not a number")],
+        [Result<Int?, ErrorType1>.success(12), .success(nil)]
+    )
+)
+func testMap(input: Result<String, ErrorType1>, expectedOutput: Result<Int?, ErrorType1>?)
+    async throws
+{
+    let transform: @Sendable (String) -> Int? = Int.init
+    let async_mapped = await input.map { input in
+        await Task { transform(input) }.value
     }
-    #expect(original == mapped, "Expected failure to be unchanged")
-}
+    let sync_mapped = await input.map(transform)
 
-@Test func testSyncMapStillAvailable() throws {
-    let original = Result<String, ErrorType1>.success("12")
-    let mapped = original.map { Int($0) }
-    #expect(try mapped.get() == 12)
+    #expect(async_mapped == sync_mapped, "Async map should behave like sync map")
+    #expect(
+        async_mapped == expectedOutput,
+        "Async map should produce the expected output value")
 }
 
 // MARK: - mapError
