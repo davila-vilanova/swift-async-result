@@ -30,14 +30,14 @@ private func makeAsync<I: Sendable, O: Sendable>(syncFunc: @escaping @Sendable (
 )
 func testMap(input: Result<String, ErrorType1>, expectedOutput: Result<Int?, ErrorType1>?) async {
     let transform: @Sendable (String) -> Int? = Int.init
-    let async_mapped = await input.map { input in
+    let asyncMapped = await input.map { input in
         await Task { transform(input) }.value
     }
-    let sync_mapped = await input.map(transform)
+    let syncMapped = await input.map(transform)
 
-    #expect(async_mapped == sync_mapped, "Async map should behave like sync map")
+    #expect(asyncMapped == syncMapped, "Async map should behave like sync map")
     #expect(
-        async_mapped == expectedOutput,
+        asyncMapped == expectedOutput,
         "Async map should produce the expected output value")
 }
 
