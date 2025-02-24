@@ -14,7 +14,7 @@ struct ErrorType2: Error, Equatable {
 
 /// "Craftily converts" a regular, synchronous function with one argument of type `I`
 /// into an analogous but async counterpart.
-private func makeAsync<I: Sendable, O: Sendable>(syncFunc: @escaping @Sendable (I) -> O) -> (I)
+private func makeAsync<I: Sendable, O: Sendable>(_ syncFunc: @escaping @Sendable (I) -> O) -> (I)
     async -> O
 {
     return { input in
@@ -30,10 +30,8 @@ private func makeAsync<I: Sendable, O: Sendable>(syncFunc: @escaping @Sendable (
 )
 func testMap(input: Result<String, ErrorType1>, expectedOutput: Result<Int?, ErrorType1>?) async {
     let transform: @Sendable (String) -> Int? = Int.init
-    let asyncMapped = await input.map { input in
-        await Task { transform(input) }.value
-    }
     let syncMapped = await input.map(transform)
+    let asyncMapped = await input.map(makeAsync(transform))
 
     #expect(asyncMapped == syncMapped, "Async map should behave like sync map")
     #expect(
