@@ -4,8 +4,9 @@
 extension Result {
     /// Like the regular `map`, but for async transform functions.
     @inlinable
-    public func map<NewSuccess>(
-        _ transform: (Success) async -> NewSuccess
+    @_disfavoredOverload
+    public func map<NewSuccess: ~Copyable>(
+        _ transform: @Sendable (Success) async -> NewSuccess
     ) async -> Result<NewSuccess, Failure> {
         switch self {
         case let .success(success):
