@@ -6,7 +6,16 @@ struct ErrorType1: Error, Equatable {
     let message: String
 }
 
+// ErrorType1s are transformed into this, which tries to parse the message as an int error code.
 struct ErrorType2: Error, Equatable {
+    let code: Int?
+
+    static func fromErrorType1(_ errorType1: ErrorType1) -> Self {
+        .init(code: Int(errorType1.message))
+    }
+}
+
+struct ErrorType3: Error, Equatable {  // To be removed
     let message: String
 }
 
@@ -34,7 +43,8 @@ func testMap(input: Result<String, ErrorType1>, expectedOutput: Result<Int?, Err
     let syncMapped: Result<Int?, ErrorType1> = input.map(transform)
     let asyncMapped = await input.map(makeAsync(transform))
 
-    #expect(asyncMapped == syncMapped, "Async map should behave like sync map")
+    #expect(
+        asyncMapped == syncMapped, "Async map should produce result values identical to sync map")
     #expect(
         asyncMapped == expectedOutput,
         "Async map should produce the expected output value")
@@ -42,34 +52,35 @@ func testMap(input: Result<String, ErrorType1>, expectedOutput: Result<Int?, Err
 
 // MARK: - mapError
 
-@Test func testAsyncMapErrorTransformsFailure() async throws {
-    let original = Result<String, ErrorType1>.failure(ErrorType1(message: "error"))
-    let mapped = await original.mapError { error in
-        await Task { ErrorType2(message: "transformed \(error.message)") }.value
+@Test(
+    arguments: zip(
+        [
+            Result<String, ErrorType1>.failure(.init(message: "24")),
+            .failure(.init(message: "not a number")),
+            .success("Success case to be left unchanged"),
+        ],
+        [
+            Result<String, ErrorType2>.failure(.init(code: 24)),
+            .failure(.init(code: nil)),
+            .success("Success case to be left unchanged"),
+        ]
+    )
+)
+func testMapError(input: Result<String, ErrorType1>, expectedOutput: Result<String, ErrorType2>)
+    async
+{
+    let transform: @Sendable (ErrorType1) -> (ErrorType2) = ErrorType2.fromErrorType1
+    let syncMapped = input.mapError { (errortype1: ErrorType1) -> ErrorType2 in
+        ErrorType2.fromErrorType1(errortype1)
     }
-    guard case let .failure(error) = mapped else {
-        Issue.record("Expected a transformed failure")
-        return
-    }
-    #expect(error.message == "transformed error", "Expected failure to be transformed")
-}
+    let asyncMapped = await input.mapError(makeAsync(transform))
+    #expect(
+        asyncMapped == syncMapped,
+        "Async mapError should produce result values identical to sync mapError")
+    #expect(
+        asyncMapped == expectedOutput,
+        "Async mapError should produce the expected output value")
 
-@Test func testAsyncMapErrorLeavesSuccessUnchanged() async throws {
-    let original = Result<String, ErrorType1>.success("a success value")
-    let mapped = await original.mapError { error in
-        await Task { ErrorType2(message: "this should never run") }.value
-    }
-    #expect(try mapped.get() == "a success value", "Expected success to be unchanged")
-}
-
-@Test func testSyncMapErrorStillAvailable() throws {
-    let original = Result<String, ErrorType1>.failure(ErrorType1(message: "error"))
-    let mapped = original.mapError { ErrorType2(message: "transformed \($0.message)") }
-    guard case let .failure(error) = mapped else {
-        Issue.record("Expected a transformed failure")
-        return
-    }
-    #expect(error.message == "transformed error", "Expected failure to be transformed")
 }
 
 // MARK: - flatMap
@@ -120,7 +131,7 @@ func testMap(input: Result<String, ErrorType1>, expectedOutput: Result<Int?, Err
 @Test func testAsyncFlatMapErrorTransformsFailure() async throws {
     let original = Result<String, ErrorType1>.failure(.init(message: "error"))
     let mapped = await original.flatMapError { error in
-        await Task { .failure(ErrorType2(message: "transformed \(error.message)")) }.value
+        await Task { .failure(ErrorType3(message: "transformed \(error.message)")) }.value
     }
     guard case let .failure(error) = mapped else {
         Issue.record("Expected a transformed failure")
@@ -131,7 +142,7 @@ func testMap(input: Result<String, ErrorType1>, expectedOutput: Result<Int?, Err
 
 @Test func testAsyncFlatMapErrorTransformsFailureToSuccess() async throws {
     let original = Result<String, ErrorType1>.failure(.init(message: "error"))
-    let mapped: Result<String, ErrorType2> = await original.flatMapError { error in
+    let mapped: Result<String, ErrorType3> = await original.flatMapError { error in
         await Task { .success("turn an \(error.message) into a success!") }.value
     }
     #expect(
@@ -141,16 +152,16 @@ func testMap(input: Result<String, ErrorType1>, expectedOutput: Result<Int?, Err
 
 @Test func testAsyncFlatMapErrorLeavesSuccessUnchanged() async throws {
     let original = Result<String, ErrorType1>.success("a success value")
-    let mapped: Result<String, ErrorType2> = await original.flatMapError { error in
-        await Task { .failure(ErrorType2(message: "this should never run")) }.value
+    let mapped: Result<String, ErrorType3> = await original.flatMapError { error in
+        await Task { .failure(ErrorType3(message: "this should never run")) }.value
     }
     #expect(try mapped.get() == "a success value", "Expected failure to be unchanged")
 }
 
 @Test func testSyncFlatMapErrorStillAvailable() throws {
     let original = Result<String, ErrorType1>.failure(ErrorType1(message: "error"))
-    let mapped: Result<String, ErrorType2> = original.flatMapError { error in
-        .failure(ErrorType2(message: "transformed \(error.message)"))
+    let mapped: Result<String, ErrorType3> = original.flatMapError { error in
+        .failure(ErrorType3(message: "transformed \(error.message)"))
     }
     guard case let .failure(error) = mapped else {
         Issue.record("Expected a transformed failure")

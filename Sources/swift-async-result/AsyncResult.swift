@@ -17,6 +17,7 @@ extension Result {
     }
 
     /// Like the regular `mapError`, but for async transform functions
+    @_disfavoredOverload
     public func mapError<NewFailure>(
         _ transform: (Failure) async -> NewFailure
     ) async -> Result<Success, NewFailure> {

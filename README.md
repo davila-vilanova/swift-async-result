@@ -16,3 +16,5 @@ https://github.com/swiftlang/swift/blob/ac698a14ec3745235786fbcc99a749d699fa702a
     _ transform: (Success) -> NewSuccess
   ) -> Result<NewSuccess, Failure>
 ```
+
+Async `mapError` is marked as `@_disfavoredOverload` to avoid ambiguous use errors when attempting to perform synchronous error mappings from asynchronous contexts.
