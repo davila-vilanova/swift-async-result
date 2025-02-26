@@ -33,11 +33,19 @@ private func makeAsync<I: Sendable, O: Sendable>(
 
 @Test(
     arguments: zip(
-        [Result<String, ErrorType1>.success("12"), .success("not a number")],
-        [Result<Int?, ErrorType1>.success(12), .success(nil)]
+        [
+            Result<String, ErrorType1>.success("12"),
+            .success("not a number"),
+            .failure(.init(message: "error should be left unchanged ")),
+        ],
+        [
+            Result<Int?, ErrorType1>.success(12),
+            .success(nil),
+            .failure(.init(message: "error should be left unchanged ")),
+        ]
     )
 )
-func testMap(input: Result<String, ErrorType1>, expectedOutput: Result<Int?, ErrorType1>?) async {
+func testMap(input: Result<String, ErrorType1>, expectedOutput: Result<Int?, ErrorType1>) async {
     let transform: @Sendable (String) -> Int? = Int.init
 
     let syncMapped: Result<Int?, ErrorType1> = input.map(transform)
