@@ -18,3 +18,5 @@ https://github.com/swiftlang/swift/blob/ac698a14ec3745235786fbcc99a749d699fa702a
 ```
 
 Async `mapError` is marked as `@_disfavoredOverload` to avoid ambiguous use errors when attempting to perform synchronous error mappings from asynchronous contexts.
+
+For each of the transforming operations (map, mapError, flatMap, flatMapError) there's an explicitly named async method (e.g asyncMap), an explicitly named __sync__ method (e.g. syncMap) which forwards the call to `Result`'s default sync implementation and an overload of the original method (e.g. map) that points to the async method.
