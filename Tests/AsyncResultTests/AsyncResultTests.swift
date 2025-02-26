@@ -162,34 +162,69 @@ func testFlatMapError(
         "Async flatMapError should produce the expected output value")
 }
 
-@Test func testConvertAsyncThrowingExpression() async throws {
-    let success = await Result {
-        await Task { "this worked out" }.value
-    }
-    #expect(
-        try success.get() == "this worked out",
-        "Expected success value for successfully async initialized result"
-    )
+// MARK: - Test initializers from sync and async throwing expressions
 
-    let failure = await Result<String, any Error> {
-        return try await Task {
-            throw ErrorType1(message: "but this didn't")
-        }.value
-    }
-    guard case let .failure(error) = failure else {
-        Issue.record("Expected a failure from initializer")
-        return
-    }
-    let errorType1 = try #require(
-        error as? ErrorType1, "Expected the same kind of error that was thrown in the initializer"
-    )
-    #expect(errorType1.message == "but this didn't")
+@Sendable func succeedSync() throws -> String {
+    "this worked out"
+}
+@Sendable func succeedAsync() async throws -> String {
+    try await Task(operation: succeedSync).value
+}
+@Sendable func failSync() throws -> String {
+    throw ErrorType1(message: "but this didn't")
+}
+@Sendable func failAsync() async throws -> String {
+    try await Task(operation: failSync).value
 }
 
-@Test func testConvertSyncThrowingExpressionStillAvailable() throws {
-    let success = Result { "this worked out" }
+@Test(
+    arguments: zip(
+        [
+            (succeedSync, succeedAsync),
+            (failSync, failAsync),
+        ],
+        [
+            Result<String, any Error>.success("this worked out"),
+            .failure(ErrorType1(message: "but this didn't")),
+        ]
+    )
+)
+func testInitFromThrowingExpression(
+    functions: (() throws -> String, @Sendable () async throws -> String),
+    expectedOutput: Result<String, any Error>
+) async {
+    let (syncFunc, asyncFunc) = functions
+    let syncInittedResult = Result(catching: syncFunc)
+    let asyncInittedResult = await Result(catching: asyncFunc)
+
+    // Ideally this test would rely on typed throw function types to determine error equality,
+    // but Swift support for typed errors was introduced only on 6.0. So resort to an
+    // inelegant way of determine Result equality for two Results that fail with ErrorType1
+    // when the error type is not known by the Swift<6 compiler:
+    func eq<Success: Equatable>(
+        _ lhs: Result<Success, any Error>, _ rhs: Result<Success, any Error>
+    ) -> Bool {
+        switch (lhs, rhs) {
+        case let (.success(lhsValue), .success(rhsValue)):
+            return lhsValue == rhsValue
+        case let (.failure(lhsError), .failure(rhsError)):
+            guard let lhsErrorType1 = lhsError as? ErrorType1,
+                let rhsErrorType1 = rhsError as? ErrorType1
+            else {
+                return false
+            }
+            return lhsErrorType1 == rhsErrorType1
+        default:
+            return false
+        }
+    }
+
     #expect(
-        try success.get() == "this worked out",
-        "Expected success value for successfully initialized result"
+        eq(syncInittedResult, asyncInittedResult),
+        "Async initialization should produce the same value as sync initialization"
+    )
+    #expect(
+        eq(asyncInittedResult, expectedOutput),
+        "Async initialization should produce the expected result"
     )
 }
