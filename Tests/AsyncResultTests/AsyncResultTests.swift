@@ -74,11 +74,12 @@ func testMap(input: Result<String, ErrorType1>, expectedOutput: Result<Int?, Err
         ]
     )
 )
-func testMapError(input: Result<String, ErrorType1>, expectedOutput: Result<String, ErrorType2>)
-    async
-{
+func testMapError(
+    input: Result<String, ErrorType1>,
+    expectedOutput: Result<String, ErrorType2>
+) async {
     let transform: @Sendable (ErrorType1) -> (ErrorType2) = ErrorType2.fromErrorType1
-    let syncMapped = input.mapError { (errortype1: ErrorType1) -> ErrorType2 in
+    let syncMapped = input.syncMapError { (errortype1: ErrorType1) -> ErrorType2 in
         ErrorType2.fromErrorType1(errortype1)
     }
     let asyncMapped = await input.mapError(makeAsync(transform))
