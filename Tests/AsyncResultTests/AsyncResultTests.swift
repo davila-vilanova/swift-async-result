@@ -15,10 +15,6 @@ struct ErrorType2: Error, Equatable {
     }
 }
 
-struct ErrorType3: Error, Equatable {  // To be removed
-    let message: String
-}
-
 /// "Craftily converts" a regular, synchronous function with one argument
 /// into an analogous, async counterpart.
 private func makeAsync<I: Sendable, O: Sendable>(
