@@ -6,7 +6,8 @@ struct ErrorType1: Error, Equatable {
     let message: String
 }
 
-// ErrorType1s are transformed into this, which tries to parse the message as an int error code.
+// `ErrorType1`s are transformed into this, which tries to parse the message as
+// an int error code.
 struct ErrorType2: Error, Equatable {
     let code: Int?
 
@@ -103,7 +104,8 @@ func testFlatMap(
     input: Result<String, ErrorType1>, expectedOutput: Result<Int, ErrorType1>
 ) async throws {
     // Tries to parse a string into an integer.
-    // Note that it returns a Result, so flatMap can extract its success value or failure error.
+    // Note that it returns a Result, so flatMap can extract its success value
+    // or failure error.
     @Sendable func attemptTransform(input: String) -> Result<Int, ErrorType1> {
         guard let parsed = Int(input) else {
             return .failure(ErrorType1(message: "could not convert to int"))
@@ -193,10 +195,11 @@ func testInitFromThrowingExpression(
     let syncInittedResult = Result(catching: syncFunc)
     let asyncInittedResult = await Result(catching: asyncFunc)
 
-    // Ideally this test would rely on typed throw function types to determine error equality,
-    // but Swift support for typed errors was introduced only on 6.0. So resort to an
-    // inelegant way of determine Result equality for two Results that fail with ErrorType1
-    // when the error type is not known by the Swift<6 compiler:
+    // Ideally this test would rely on typed throw function types to determine
+    // error equality, but Swift support for typed errors was introduced only on
+    // 6.0. So resort to an inelegant way of determine `Result` equality for two
+    // `Results` that fail with `ErrorType1` when the error type is not known by
+    // the Swift < 6 compiler:
     func eq<Success: Equatable>(
         _ lhs: Result<Success, any Error>, _ rhs: Result<Success, any Error>
     ) -> Bool {
