@@ -9,7 +9,8 @@ AsyncResult extends `Result`'s four transform operations with async alternatives
 ### Async transform operations:
 
 For each of `Result`'s four basic transforms (`map`, `mapError`, `flatMap` and `flatMapError`), this library adds an equivalent method that takes an asynchronous closure or function to perform the transformation, plus two other methods that call either the synchronous or asynchronous version of the operation. For example, for `map`, the included extension on `Result` adds:
-    - `asyncMap`: this is the most important addition to the map operation. It rewrites map to work with async transform closures.
+
+    - `asyncMap`: this is the most important addition to the map operation. It provides an alternative to the original `map` to work with async transform closures.
     - `map`: this is an overload of the original `map` method which matches the signature of `asyncMap`, and in fact just redirects to it. Often, Swift's compiler will be able to infer which flavor of `map` (original sync or this extension's async) you want to use.
     - `syncMap`: if the compiler does not select the right overload, you can call explicitly the desired flavor of the transform method, such as the above `asyncMap` or the added `syncMap`, which just redirects the call to the original `Result.map`.
 
