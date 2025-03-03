@@ -14,9 +14,9 @@ For each of `Result`'s four basic transforms (`map`, `mapError`, `flatMap` and `
 - `map`: this is an overload of the original `map` method which matches the signature of `asyncMap`, and in fact just redirects to it. Often, the Swift compiler will be able to infer which flavor of `map` (the original sync or this extension's async) you want to use.
 - `syncMap`: if the compiler does not select the right overload, you can call explicitly the desired flavor of the transform method, such as the above `asyncMap` or the added `syncMap`, which just redirects the call to the original `Result.map`.
 
-In my tests, from async contexts, the compiler selects the right overloads for `map` and `flatMap` depending on whether the transform closure argument is sync or async, but it wrongly selects the async overloads for `mapError` and `flatMapError` when passed a synchronous function. This results in an error. It's in those cases that the `sync[Flat]Map[Error]` methods may come handy. I haven't found a case yet where the explicitly `async` named counterparts are useful, but they're provided for symmetry and to cover any potential blind spots I may have missed.
+In my tests, from async contexts, the compiler selects the right overloads for `map` and `flatMap` depending on whether the transform closure argument is sync or async, but it wrongly selects the async overloads for `mapError` and `flatMapError` when passed a synchronous closure. This results in an error. It's in those cases that the `sync[Flat]Map[Error]` methods may come handy. I haven't found a case yet where the explicitly `async` named counterparts are useful, but they're provided for symmetry and to cover any potential blind spots I may have missed.
 
-### Async error catching initializer
+### Async error-catching initializer
 
 `Result` provides an initializer that creates a new result by evaluating a throwing closure, producing a `failure` case if the closure throws an error when evaluated, or a `success` case if the closure doesn't throw and returns a value. This library adds a similar initializer to `Result` which will evaluate an asynchrous throwing closure or function, and otherwise behaves exactly like its sync counterpart.
 
@@ -36,9 +36,9 @@ let package = Package(
 )
 ```
 
-Alternatively, if adding the dependency directly to an Xcode project, select `File > Add package dependencies...`, then enter the package URL shown above in the search bar, and finally enter the desired dependency rule -- for example, "Up to Next Major Version" with a value of 1.0.0.
+Alternatively, if adding the dependency directly to an Xcode project, select `File > Add package dependencies...` in Xcode's menu bar, then enter the package URL shown above in the search bar, and finally enter the desired dependency rule — for example, "Up to Next Major Version" with a value of 1.0.0.
 
-Regardless of the method used above, import the library into any source files you may want to use it from like this:
+Regardless of the method used above, import the library into any source files from which you may want to use it with the following `import` statement:
 
 ```swift
 import AsyncResult
