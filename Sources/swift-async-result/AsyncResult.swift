@@ -385,7 +385,10 @@ extension Result {
     }
 }
 
-/// Like the regular `Result.init(catching:)`, but for async functions.
+/// Creates a new result by evaluating a throwing asynchronous closure,
+/// capturing the returned value as a success, or any thrown error as a failure.
+///
+/// - Parameter body: A potentially throwing async closure to evaluate.
 extension Result where Failure == Swift.Error {
     @_transparent
     init(catching body: @Sendable () async throws -> Success) async {
